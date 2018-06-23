@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'ansible_vault/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "ansible-vault"
+  spec.name          = "ansible-vault-rb"
   spec.version       = AnsibleVault::VERSION
   spec.authors       = ["kino1134"]
   spec.email         = [""]
