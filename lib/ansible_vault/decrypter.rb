@@ -19,7 +19,8 @@ module AnsibleVault
         return ''
       end
 
-      text = cipher(:decrypt, cipher_key, iv).update(cipher_text)
+      cipher = cipher(:decrypt, cipher_key, iv)
+      text = cipher.update(cipher_text) + cipher.final
       unpadding(text)
     end
 
