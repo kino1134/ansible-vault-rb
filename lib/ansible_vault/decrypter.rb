@@ -8,7 +8,7 @@ module AnsibleVault
     # @see AnsibleVault.decrypt
     def decrypt(text, password)
       header, salt, hmac, cipher_text = decode_file(text)
-      unless header == FILE_HEADER
+      unless header =~ FILE_HEADER_PATTERN
         STDERR.puts 'すでに復号化されています。'
         return ''
       end

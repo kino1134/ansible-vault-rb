@@ -12,10 +12,15 @@ module AnsibleVault
     LINE_PER_CHARS = 80
 
     # @see AnsibleVault.encrypt
-    def encrypt(text, password, salt=nil)
-      if text.start_with?(FILE_HEADER)
+    def encrypt(text, password, label=nil, salt=nil)
+      if text =~ FILE_HEADER_PATTERN
         STDERR.puts 'すでに暗号化されています。'
         return ''
+      end
+
+      header = FILE_HEADER_11
+      if (label)
+        header = FILE_HEADER_12 + label
       end
 
       salt ||= SecureRandom.random_bytes(KEY_LENGTH)
@@ -26,7 +31,7 @@ module AnsibleVault
       hmac = calculated_hmac(cipher_text, hmac_key)
 
       raw_body = [hexlify(salt), hmac, hexlify(cipher_text)].join("\n")
-      [FILE_HEADER, *split(hexlify(raw_body))].join("\n")
+      [header, *split(hexlify(raw_body))].join("\n")
     end
 
     private

@@ -7,8 +7,12 @@ require 'openssl'
 module AnsibleVault
   class Base
 
-    # 現在のAnsible Vaultヘッダ
-    FILE_HEADER = "$ANSIBLE_VAULT;1.1;AES256".freeze
+    # Ansible Vaultヘッダ(1.1)
+    FILE_HEADER_11 = "$ANSIBLE_VAULT;1.1;AES256".freeze
+    # Ansible Vaultヘッダ(1.2)
+    FILE_HEADER_12 = "$ANSIBLE_VAULT;1.2;AES256;".freeze
+    # Ansible Vaultヘッダを表す正規表現
+    FILE_HEADER_PATTERN = /\A\$ANSIBLE_VAULT;1\.\d;AES(?:256)?(?:;.+)?/
     # 共通鍵・HMAC鍵の長さ
     KEY_LENGTH = 32
     # Initialization Vectorの長さ
