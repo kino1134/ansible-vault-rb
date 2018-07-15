@@ -15,7 +15,7 @@ module AnsibleVault
 
       cipher_key, hmac_key, iv = derive_keys(password, salt)
       unless hmac == calculated_hmac(cipher_text, hmac_key)
-        STDERR.puts 'HMACの値が一致しません。'
+        STDERR.puts 'HMACの値が一致しません。パスワードを確認してください。'
         return ''
       end
 
