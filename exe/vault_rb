@@ -19,7 +19,7 @@ unless File.file? path
   exit 1
 end
 
-password = STDIN.noecho { Readline.readline "パスワード: " }.tap { puts }
+password = STDIN.noecho { Readline.readline "Input Password: " }.tap { puts }
 plain_text = AnsibleVault.decrypt(File.read(path), password)
 if plain_text.empty?
   exit 1
