@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+# coding: utf-8
+
+require 'readline'
+require 'io/console'
+require 'tempfile'
+require 'ansible_vault'
+
+unless ARGV.size >= 2
+  STDERR.puts '引数は二つ必要です。edit OR view, 参照先ファイルパス'
+  exit 1
+end
+
+sub, path, editor = ARGV
+editor ||= 'vim'
+
+unless File.file? path
+  STDERR.puts '指定されたファイルは存在しません。'
+  exit 1
+end
+
+password = STDIN.noecho { Readline.readline "パスワード: " }.tap { puts }
+plain_text = AnsibleVault.decrypt(File.read(path), password)
+if plain_text.empty?
+  exit 1
+end
+
+case sub
+when 'view'
+  puts plain_text
+when 'edit'
+  Tempfile.create(['vault', File.extname(path)]) do |f|
+    f.write plain_text
+    f.flush
+    if system editor, f.path
+      puts '編集内容を反映します。'
+      AnsibleVault.write(f.path, path, password)
+    else
+      p $?
+    end
+  end
+else
+  STDERR.puts 'サブコマンドはedit, viewのみです。'
+  exit 1
+end
+
+
+# vim: set filetype=ruby:
