@@ -2,9 +2,23 @@
 # coding: utf-8
 
 require 'readline'
-require 'io/console'
+# require 'io/console'
 require 'tempfile'
 require 'ansible_vault'
+
+# io/consoleがGitBash(MinGW)上で動かなかったため
+def prompt_password
+  print 'パスワード: '
+  STDOUT.flush
+  begin
+    system 'stty -echo'
+    password = STDIN.gets.chop
+    puts
+    password
+  ensure
+    system 'stty echo'
+  end
+end
 
 unless ARGV.size >= 2
   STDERR.puts '引数は二つ必要です。edit OR view, 参照先ファイルパス'
@@ -19,7 +33,8 @@ unless File.file? path
   exit 1
 end
 
-password = STDIN.noecho { Readline.readline "Input Password: " }.tap { puts }
+# password = STDIN.noecho { Readline.readline "Input Password: " }.tap { puts }
+password = prompt_password
 plain_text = AnsibleVault.decrypt(File.read(path), password)
 if plain_text.empty?
   exit 1
