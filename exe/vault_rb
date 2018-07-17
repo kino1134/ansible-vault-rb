@@ -1,63 +1,141 @@
 #!/usr/bin/env ruby
 # coding: utf-8
 
-require 'readline'
-# require 'io/console'
+require 'optparse'
 require 'tempfile'
 require 'ansible_vault'
 
-# io/consoleがGitBash(MinGW)上で動かなかったため
-def prompt_password
-  print 'パスワード: '
-  STDOUT.flush
-  begin
-    system 'stty -echo'
-    password = STDIN.gets.chop
-    puts
-    password
-  ensure
-    system 'stty echo'
-  end
-end
+module AnsibleVault
+  class CLI
 
-unless ARGV.size >= 2
-  STDERR.puts '引数は二つ必要です。edit OR view, 参照先ファイルパス'
-  exit 1
-end
+    attr_reader :parser, :sub, :file, :password_file, :restore_salt, :editor
 
-sub, path, editor = ARGV
-editor ||= 'vim'
+    def initialize
+      @restore_salt = false
+      @editor = 'vim'
 
-unless File.file? path
-  STDERR.puts '指定されたファイルは存在しません。'
-  exit 1
-end
+      @parser = OptionParser.new do |opts|
+        opts.banner = 'vault_rb: ボルトファイルの閲覧・編集を行います'
+        opts.define_head 'Usage: vault_rb [edit|view] [options] [vaultfile.yml]'
+        opts.separator ''
+        opts.separator 'Options:'
 
-# password = STDIN.noecho { Readline.readline "Input Password: " }.tap { puts }
-password = prompt_password
-plain_text = AnsibleVault.decrypt(File.read(path), password)
-if plain_text.empty?
-  exit 1
-end
-
-case sub
-when 'view'
-  puts plain_text
-when 'edit'
-  Tempfile.create(['vault', File.extname(path)]) do |f|
-    f.write plain_text
-    f.flush
-    if system editor, f.path
-      puts '編集内容を反映します。'
-      AnsibleVault.write(f.path, path, password)
-    else
-      p $?
+        opts.on('-p path', '--password-file=path', 'パスワードの書かれたファイルを指定') do |v|
+          @password_file = v
+        end
+        opts.on('-s', '--restore-salt', '編集前後でソルトを変えません') do |v|
+          @restore_salt = true
+        end
+        opts.on('-e path', '--editor=path', '編集に使用するエディタを指定') do |v|
+          @editor = v
+        end
+      end
     end
+
+    def parse(argv)
+      begin
+        rest = parser.parse(argv)
+        @sub, @file = rest
+      rescue OptionParser::ParseError => e
+        STDERR.puts e.message
+        STDERR.puts parser
+        exit 1
+      end
+
+      unless sub and ['view', 'edit'].include?(sub)
+        STDERR.puts 'サブコマンドの指定が正しくありません。'
+        STDERR.puts parser
+        exit 1
+      end
+
+      unless file
+        STDERR.puts 'ファイルが指定されていません。'
+        STDERR.puts parser
+        exit 1
+      end
+
+      self
+    end
+
+    def start
+      raw_text = read_text
+      password = read_password
+      plain_text = decrypt(raw_text, password)
+
+      case sub
+      when 'view'
+        puts plain_text
+      when 'edit'
+        Tempfile.create(['vault', File.extname(file)]) do |f|
+          f.write plain_text
+          f.flush
+          if system editor, f.path
+            puts '編集内容を反映します。'
+
+            salt = nil
+            if restore_salt
+              salt = AnsibleVault.salt(raw_text)
+            end
+
+            AnsibleVault.write(f.path, file, password, nil, salt)
+          else
+            p $?
+          end
+        end
+      end
+
+    end
+
+    private
+
+    def read_text
+      unless File.file? file
+        STDERR.puts '指定されたファイルは存在しません: ' + file
+        exit 1
+      end
+
+      File.read(file)
+    end
+
+    def read_password
+      if password_file
+        unless File.file? password_file
+          STDERR.puts '指定されたパスワードファイルは存在しません: ' + password_file
+          exit 1
+        end
+        File.read(password_file).chop
+      else
+        prompt_password
+      end
+    end
+
+    def decrypt(text, password)
+      plain_text = AnsibleVault.decrypt(text, password)
+      if plain_text.empty?
+        exit 1
+      end
+
+      plain_text
+    end
+
+    # io/consoleがGitBash(MinGW)上で動かなかったため、少し複雑になっている
+    def prompt_password
+      print 'パスワード: '
+      STDOUT.flush
+      begin
+        system 'stty -echo'
+        password = STDIN.gets.chop
+        puts
+        password
+      ensure
+        system 'stty echo'
+      end
+    end
+
   end
-else
-  STDERR.puts 'サブコマンドはedit, viewのみです。'
-  exit 1
 end
 
+cli = AnsibleVault::CLI.new.parse(ARGV)
+cli.start
 
 # vim: set filetype=ruby:
