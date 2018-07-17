@@ -45,5 +45,13 @@ module AnsibleVault
       Decrypter.new.decrypt(text, password)
     end
 
+    # 現時点でのソルトを取得する
+    # @param text [String] ボルト文字列
+    # @return ソルトを表すバイト文字列
+    def salt(text)
+      arr = Decrypter.new.decode_file(text)
+      arr[1]
+    end
+
   end
 end

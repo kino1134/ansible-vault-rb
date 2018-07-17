@@ -24,8 +24,6 @@ module AnsibleVault
       unpadding(text)
     end
 
-    private
-
     def decode_file(text)
       header, *rest =  text.lines.map(&:chomp)
       salt_str, hmac, rest = unhexlify(rest.join).split("\n", 3)
@@ -33,6 +31,8 @@ module AnsibleVault
       salt = unhexlify(salt_str)
       [header, salt, hmac, cipher_text]
     end
+
+    private
 
     def unpadding(text)
       len = text[-1].codepoints.first
