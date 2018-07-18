@@ -18,8 +18,8 @@ module AnsibleVault
     # @return [String] 暗号化されたコンテキスト
     #   指定されたファイルがすでに暗号化されていた場合、空文字を返す
     def write(src, dest, password, label=nil, salt=nil)
-      cipher_text = encrypt(File.read(src, encoding: 'ascii-8bit'), password, label, salt)
-      File.write(dest, cipher_text, encoding: 'ascii-8bit') unless cipher_text.empty?
+      cipher_text = encrypt(File.read(src, encoding: 'ascii-8bit', mode: 'rt'), password, label, salt)
+      File.write(dest, cipher_text, encoding: 'ascii-8bit', mode: 'rt') unless cipher_text.empty?
       cipher_text
     end
 
