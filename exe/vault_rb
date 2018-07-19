@@ -66,7 +66,8 @@ module AnsibleVault
       when 'view'
         puts plain_text
       when 'edit'
-        Tempfile.create(['vault', File.extname(file)]) do |f|
+        mode = File::Constants::BINARY
+        Tempfile.create(['vault', File.extname(file)], mode: mode) do |f|
           f.write plain_text
           f.flush
           if system editor, f.path
@@ -94,7 +95,7 @@ module AnsibleVault
         exit 1
       end
 
-      File.read(file)
+      File.read(file, encoding: 'ascii-8bit', mode: 'rb')
     end
 
     def read_password
